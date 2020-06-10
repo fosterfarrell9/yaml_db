@@ -64,10 +64,20 @@ module YamlDb
         end
       end
 
+      # def self.truncate_table(table)
+      #   begin
+      #     ActiveRecord::Base.connection.execute("TRUNCATE #{Utils.quote_table(table)}")
+      #   rescue Exception
+      #     ActiveRecord::Base.connection.execute("DELETE FROM #{Utils.quote_table(table)}")
+      #   end
+      # end
+
       def self.truncate_table(table)
         begin
+          ActiveRecord::Base.connection.execute("SAVEPOINT before_truncation")
           ActiveRecord::Base.connection.execute("TRUNCATE #{Utils.quote_table(table)}")
         rescue Exception
+          ActiveRecord::Base.connection.execute("ROLLBACK TO SAVEPOINT before_truncation")
           ActiveRecord::Base.connection.execute("DELETE FROM #{Utils.quote_table(table)}")
         end
       end
@@ -81,7 +91,20 @@ module YamlDb
         reset_pk_sequence!(table)
       end
 
+      # def self.load_records(table, column_names, records)
+      #   if column_names.nil?
+      #     return
+      #   end
+      #   quoted_column_names = column_names.map { |column| ActiveRecord::Base.connection.quote_column_name(column) }.join(',')
+      #   quoted_table_name = Utils.quote_table(table)
+      #   records.each do |record|
+      #     quoted_values = record.map{|c| ActiveRecord::Base.connection.quote(c)}.join(',')
+      #     ActiveRecord::Base.connection.execute("INSERT INTO #{quoted_table_name} (#{quoted_column_names}) VALUES (#{quoted_values})")
+      #   end
+      # end
+
       def self.load_records(table, column_names, records)
+        return if records.nil?
         if column_names.nil?
           return
         end
@@ -164,13 +187,22 @@ module YamlDb
 
       end
 
+      # def self.tables
+      #   ActiveRecord::Base.connection.tables.reject { |table| ['schema_info', 'schema_migrations'].include?(table) }.sort
+      # end
+
       def self.tables
-        ActiveRecord::Base.connection.tables.reject { |table| ['schema_info', 'schema_migrations'].include?(table) }.sort
+        ActiveRecord::Base.connection.tables.reject { |table| ['ar_internal_metadata', 'schema_info', 'schema_migrations'].include?(table) }.sort
       end
 
-      def self.dump_table(io, table)
-        return if table_record_count(table).zero?
+      # def self.dump_table(io, table)
+      #   return if table_record_count(table).zero?
 
+      #   dump_table_columns(io, table)
+      #   dump_table_records(io, table)
+      # end
+
+      def self.dump_table(io, table)
         dump_table_columns(io, table)
         dump_table_records(io, table)
       end
