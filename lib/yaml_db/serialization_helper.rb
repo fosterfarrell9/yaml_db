@@ -74,10 +74,10 @@ module YamlDb
 
       def self.truncate_table(table)
         begin
-          ActiveRecord::Base.connection.execute("SAVEPOINT before_truncation")
+          #ActiveRecord::Base.connection.execute("SAVEPOINT before_truncation")
           ActiveRecord::Base.connection.execute("TRUNCATE #{Utils.quote_table(table)}")
         rescue Exception
-          ActiveRecord::Base.connection.execute("ROLLBACK TO SAVEPOINT before_truncation")
+          #ActiveRecord::Base.connection.execute("ROLLBACK TO SAVEPOINT before_truncation")
           ActiveRecord::Base.connection.execute("DELETE FROM #{Utils.quote_table(table)}")
         end
       end
